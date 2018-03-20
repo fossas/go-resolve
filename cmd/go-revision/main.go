@@ -17,7 +17,7 @@ func fatal(format string, a ...interface{}) {
 
 // Prints the usage string.
 func usage() {
-	fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s: go-revision <package>\n", os.Args[0])
+	fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s: %s [flags] <package>\n", os.Args[0], os.Args[0])
 	flag.PrintDefaults()
 }
 
@@ -74,7 +74,7 @@ func parseTarget(target string) (string, error) {
 	default:
 		// Assume this is a Go import path
 		gopath := os.Getenv("GOPATH")
-		targetPath = filepath.Join(gopath, target)
+		targetPath = filepath.Join(gopath, "src", target)
 	}
 
 	stat, err := os.Stat(targetPath)
