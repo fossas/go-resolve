@@ -39,7 +39,17 @@ func main() {
 	if err != nil {
 		fatal("Could not compute tree hash: %s", err.Error())
 	}
-	fmt.Println(hash)
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		fatal("Could not get working directory: %s", err.Error())
+	}
+	gopath := os.Getenv("GOPATH")
+	importPath, err := filepath.Rel(filepath.Join(gopath, "src"), cwd)
+	if err != nil {
+		fatal("Could not compute package import path: %s", err.Error())
+	}
+	fmt.Printf("%s %s\n", importPath, hash)
 }
 
 // Takes a target string (which can be either an absolute path, a relative path, or a Go import path) and return an
