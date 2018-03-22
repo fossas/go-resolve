@@ -3,17 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/pkg/errors"
 )
-
-// Prints a formatted error message, then exits with error code 1.
-func fatal(format string, a ...interface{}) {
-	fmt.Fprintf(flag.CommandLine.Output(), format, a...)
-	os.Exit(1)
-}
 
 // Prints the usage string.
 func usage() {
@@ -23,6 +18,9 @@ func usage() {
 
 func main() {
 	flag.Usage = usage
+	// TODO(@ilikebits): implement these flags when the API is implemented.
+	flag.String("package", "", "The package name to look up")
+	flag.String("hash", "", "The git tree-hash to look up")
 	flag.Parse()
 
 	if flag.NArg() != 1 {
@@ -32,22 +30,22 @@ func main() {
 
 	target, err := parseTarget(flag.Arg(0))
 	if err != nil {
-		fatal("Invalid input: %s", err.Error())
+		log.Fatalf("Invalid input: %s", err.Error())
 	}
 
 	hash, err := getTreeHash(target)
 	if err != nil {
-		fatal("Could not compute tree hash: %s", err.Error())
+		log.Fatalf("Could not compute tree hash: %s", err.Error())
 	}
 
 	cwd, err := os.Getwd()
 	if err != nil {
-		fatal("Could not get working directory: %s", err.Error())
+		log.Fatalf("Could not get working directory: %s", err.Error())
 	}
 	gopath := os.Getenv("GOPATH")
 	importPath, err := filepath.Rel(filepath.Join(gopath, "src"), cwd)
 	if err != nil {
-		fatal("Could not compute package import path: %s", err.Error())
+		log.Fatalf("Could not compute package import path: %s", err.Error())
 	}
 	fmt.Printf("%s %s\n", importPath, hash)
 }
