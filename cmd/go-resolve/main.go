@@ -19,8 +19,9 @@ func usage() {
 func main() {
 	flag.Usage = usage
 	// TODO(@ilikebits): implement these flags when the API is implemented.
-	flag.String("package", "", "The package name to look up")
+	flag.String("name", "", "The package name to look up")
 	flag.String("hash", "", "The git tree-hash to look up")
+	flag.String("revision", "", "The expected package revision")
 	flag.Parse()
 
 	if flag.NArg() != 1 {

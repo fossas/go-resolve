@@ -15,6 +15,21 @@
   version = "v1.9.0"
 
 [[projects]]
+  name = "github.com/go-redis/redis"
+  packages = [
+    ".",
+    "internal",
+    "internal/consistenthash",
+    "internal/hashtag",
+    "internal/pool",
+    "internal/proto",
+    "internal/singleflight",
+    "internal/util"
+  ]
+  revision = "877867d2845fbaf86798befe410b6ceb6f5c29a3"
+  version = "v6.10.2"
+
+[[projects]]
   branch = "master"
   name = "github.com/jbenet/go-context"
   packages = ["io"]
@@ -182,6 +197,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0957fcdf32250b948c5019cad7f17f0a982ad5865186cface73f10ec15aea093"
+  inputs-digest = "d91624f90dfe50179cc013a61b6d7ed90418dcf1809462b8011aec455bce9e56"
   solver-name = "gps-cdcl"
   solver-version = 1
