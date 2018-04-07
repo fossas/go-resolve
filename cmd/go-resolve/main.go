@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/fossas/go-resolve/hash"
 	"github.com/pkg/errors"
 )
 
@@ -34,7 +35,7 @@ func main() {
 		log.Fatalf("Invalid input: %s", err.Error())
 	}
 
-	hash, err := getTreeHash(target)
+	h, err := hash.DirHash(target)
 	if err != nil {
 		log.Fatalf("Could not compute tree hash: %s", err.Error())
 	}
@@ -48,7 +49,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not compute package import path: %s", err.Error())
 	}
-	fmt.Printf("%s %s\n", importPath, hash)
+	fmt.Printf("%s %s\n", importPath, h)
 }
 
 // Takes a target string (which can be either an absolute path, a relative path, or a Go import path) and return an
