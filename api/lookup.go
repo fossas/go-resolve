@@ -1,25 +1,26 @@
 package api
 
 import (
-	"errors"
+	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 
 	"github.com/fossas/go-resolve/resolve"
-	"github.com/go-redis/redis"
 )
 
-var (
-	errPackageNotFound          = errors.New("could not find package")
-	errPackageIncorrectChecksum = errors.New("package checksum is different")
-)
-
-// Redis schema: string(Hash) => string(Name + " " + Revision)
-
-func lookup(cache *redis.Client, hash string) (resolve.Package, error) {
-	// TODO: implement this.
-	return resolve.Package{}, nil
+func lookupByHash(db *sqlx.DB, hash string) (resolve.Package, error) {
+	var found resolve.Package
+	err := db.Get(&found, "SELECT * FROM revisions WHERE hash = $1", hash)
+	if err != nil {
+		return resolve.Package{}, errors.Wrapf(err, "could not look up hash %#v", hash)
+	}
+	return found, nil
 }
 
-func verify(cache *redis.Client, actual resolve.Package) (resolve.Package, error) {
-	// TODO: implement this.
-	return resolve.Package{}, nil
+func lookupByKey(db *sqlx.DB, key resolve.Key) (resolve.Package, error) {
+	var found resolve.Package
+	err := db.Select(&found, "SELECT * FROM revisions WHERE package = $1, revision = $2", key.Name, key.Revision)
+	if err != nil {
+		return resolve.Package{}, errors.Wrapf(err, "could not look up package %#v %#v", key.Name, key.Revision)
+	}
+	return found, nil
 }

@@ -10,9 +10,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// DirHash computes a hash of a given directory. It does this by traversing the
+// Dir computes a hash of a given directory. It does this by traversing the
 // directory and hashing all contents except those at `./.git`.
-func DirHash(dirname string) (string, error) {
+func Dir(dirname string) (string, error) {
 	h := sha256.New()
 
 	// This relies on the fact that `filepath.Walk` has a deterministic traversal order.

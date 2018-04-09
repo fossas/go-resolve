@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/contribsys/faktory"
+	faktory "github.com/contribsys/faktory/client"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 
 	"github.com/fossas/go-resolve/api"
 )
@@ -25,7 +26,7 @@ func main() {
 	defer db.Close()
 
 	addr := ":80"
-	mux := api.New(client)
+	mux := api.New(db, queue)
 	server := &http.Server{
 		Addr:    addr,
 		Handler: mux,

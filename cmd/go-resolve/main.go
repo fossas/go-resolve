@@ -35,7 +35,7 @@ func main() {
 		log.Fatalf("Invalid input: %s", err.Error())
 	}
 
-	h, err := hash.DirHash(target)
+	h, err := hash.Dir(target)
 	if err != nil {
 		log.Fatalf("Could not compute tree hash: %s", err.Error())
 	}
