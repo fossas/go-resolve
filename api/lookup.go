@@ -18,7 +18,7 @@ func lookupByHash(db *sqlx.DB, hash string) (resolve.Package, error) {
 
 func lookupByKey(db *sqlx.DB, key resolve.Key) (resolve.Package, error) {
 	var found resolve.Package
-	err := db.Select(&found, "SELECT * FROM revisions WHERE package = $1, revision = $2", key.Name, key.Revision)
+	err := db.Get(&found, "SELECT * FROM revisions WHERE package = $1 AND revision = $2", key.Name, key.Revision)
 	if err != nil {
 		return resolve.Package{}, errors.Wrapf(err, "could not look up package %#v %#v", key.Name, key.Revision)
 	}

@@ -4,6 +4,8 @@ import "github.com/fossas/go-resolve/resolve"
 
 // LookupRequest searches for a package given a hash.
 type LookupRequest struct {
+	// These fields should probably be pointers so we can tell when they're
+	// missing and return an `INVALID_REQUEST` error.
 	Hash string
 }
 
@@ -38,6 +40,7 @@ type CrawlResponse struct {
 	Err string `json:",omitempty"`
 }
 
+// ErrorResponse is a struct for holding errors.
 type ErrorResponse struct {
 	Ok  bool
 	Err string `json:",omitempty"`

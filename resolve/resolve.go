@@ -6,10 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
-	"gopkg.in/src-d/go-billy.v4/osfs"
-	git "gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing"
-	"gopkg.in/src-d/go-git.v4/storage/filesystem"
 
 	"github.com/fossas/go-resolve/hash"
 )
@@ -46,47 +42,24 @@ func All(name string) ([]Package, error) {
 // out and hash files instead of an in-memory copy.
 func Single(name, revision string) (Package, error) {
 	// Load the directory.
-	dir, err := loadPackage(name)
+	err := exec.Command("go", "get", name).Run()
 	if err != nil {
-		return Package{}, errors.Wrapf(err, "could not load %s", name)
+		return Package{}, errors.Wrapf(err, "could not run `go get %s`", name)
 	}
-
-	// Find the git repository (Go packages may be descendants of a git
-	// repository).
-	repoDir, err := findRepository(dir)
-	if err != nil {
-		return Package{}, errors.Wrapf(err, "could not find git repository containing %s", dir)
-	}
-
-	// Open the git repository.
-	// TODO: support VCSes that are not git.
-	fs := osfs.New(repoDir)
-	dotgit, err := fs.Chroot(".git")
-	if err != nil {
-		return Package{}, errors.Wrapf(err, "could not open `.git` folder at %s", repoDir)
-	}
-	storage, err := filesystem.NewStorage(dotgit)
-	if err != nil {
-		return Package{}, errors.Wrapf(err, "could not initialize filestore at %s", repoDir)
-	}
-	repo, err := git.Open(storage, dotgit)
-	if err != nil {
-		return Package{}, errors.Wrapf(err, "could not open git repository at %s", repoDir)
-	}
+	gopath := os.Getenv("GOPATH")
+	dir := filepath.Join(gopath, "src", name)
 
 	// Load revision.
-	worktree, err := repo.Worktree()
+	// TODO: support VCSes that are not git.
+	cmd := exec.Command("git", "checkout", revision)
+	cmd.Dir = dir
+	err = cmd.Run()
 	if err != nil {
-		return Package{}, errors.Wrapf(err, "could not get git worktree at %s", repoDir)
-	}
-	err = worktree.Checkout(&git.CheckoutOptions{
-		Hash: plumbing.NewHash(revision),
-	})
-	if err != nil {
-		return Package{}, errors.Wrapf(err, "could not find revision %s in %s", revision, repoDir)
+		return Package{}, errors.Wrapf(err, "could not run `git checkout %s`", revision)
 	}
 
-	h, err := hash.Dir(repoDir)
+	// Compute hash
+	h, err := hash.Dir(dir)
 	if err != nil {
 		return Package{}, errors.Wrapf(err, "could not calculate hash for %s %s", name, revision)
 	}
@@ -98,46 +71,4 @@ func Single(name, revision string) (Package, error) {
 		},
 		Hash: h,
 	}, nil
-}
-
-// loadPackage runs `go get ${name}` and returns the absolute directory of the
-// downloaded Go package, or an error.
-func loadPackage(name string) (string, error) {
-	err := exec.Command("go", "get", name).Run()
-	if err != nil {
-		return "", errors.Wrapf(err, "could not run go get %s", name)
-	}
-	gopath := os.Getenv("GOPATH")
-	return filepath.Join(gopath, "src", name), nil
-}
-
-func findRepository(dir string) (string, error) {
-	for dir != string(os.PathSeparator) {
-		ok, err := hasRepo(dir)
-		if err != nil {
-			return "", errors.Wrapf(err, "could not find repo containing %s", dir)
-		}
-		if ok {
-			return dir, nil
-		}
-		dir = filepath.Dir(dir)
-	}
-	ok, err := hasRepo(dir)
-	if err != nil {
-		return "", errors.Wrapf(err, "could not find repo containing %s", dir)
-	}
-	if ok {
-		return dir, nil
-	}
-	return "", errors.Errorf("%s is not contained by a repo", dir)
-}
-
-func hasRepo(dir string) (bool, error) {
-	info, err := os.Stat(filepath.Join(dir, ".git"))
-	if os.IsNotExist(err) {
-		return false, nil
-	} else if err != nil {
-		return false, errors.Wrapf(err, "could not check for repo in %s", dir)
-	}
-	return info.IsDir(), nil
 }

@@ -16,7 +16,7 @@ import (
 func New(db *sqlx.DB, queue *faktory.Client) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/lookup", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lookup", handle(func(w http.ResponseWriter, r *http.Request) {
 		var req LookupRequest
 		ok := mustRead(w, r, &req)
 		if !ok {
@@ -27,16 +27,16 @@ func New(db *sqlx.DB, queue *faktory.Client) *http.ServeMux {
 		found, err := lookupByHash(db, req.Hash)
 		if err == nil {
 			res = LookupResponse{Ok: true, Result: found}
-		} else if err == sql.ErrNoRows {
+		} else if errors.Cause(err) == sql.ErrNoRows {
 			res = LookupResponse{Ok: false, Err: "NO_PACKAGE_FOUND"}
 		} else {
 			log.Panicf("Could not look up package by hash %#v: %s", req.Hash, err.Error())
 		}
 
 		mustReply(w, res)
-	})
+	}))
 
-	mux.HandleFunc("/verify", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/verify", handle(func(w http.ResponseWriter, r *http.Request) {
 		var req VerifyRequest
 		ok := mustRead(w, r, &req)
 		if !ok {
@@ -54,11 +54,11 @@ func New(db *sqlx.DB, queue *faktory.Client) *http.ServeMux {
 		} else if errors.Cause(err) == sql.ErrNoRows {
 			res = VerifyResponse{Ok: false, Err: "NO_PACKAGE_FOUND"}
 		} else {
-			log.Panicf("Could not look up package by hash %#v: %s", req.Hash, err.Error())
+			log.Panicf("Could not look up package by key %#v: %s", req.Key, err.Error())
 		}
 
 		mustReply(w, res)
-	})
+	}))
 
 	mux.HandleFunc("/crawl", handle(func(w http.ResponseWriter, r *http.Request) {
 		var req CrawlRequest
