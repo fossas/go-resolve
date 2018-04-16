@@ -1,6 +1,16 @@
 package api
 
-import "github.com/fossas/go-resolve/resolve"
+// Key uniquely identifies a single package and revision.
+type Key struct {
+	Name     string `db:"package"`
+	Revision string
+}
+
+// Package contains both a package key and its resolved hash.
+type Package struct {
+	Key
+	Hash string
+}
 
 // LookupRequest searches for a package given a hash.
 type LookupRequest struct {
@@ -12,26 +22,26 @@ type LookupRequest struct {
 // LookupResponse is an Either Err Result.
 type LookupResponse struct {
 	Ok     bool
-	Err    string          `json:",omitempty"`
-	Result resolve.Package `json:",omitempty"`
+	Err    string  `json:",omitempty"`
+	Result Package `json:",omitempty"`
 }
 
 // VerifyRequest checks whether a hash is correct for a given package and
 // revision.
 type VerifyRequest struct {
-	resolve.Package
+	Package
 }
 
 // VerifyResponse is an Either Err Expected.
 type VerifyResponse struct {
 	Ok       bool
-	Err      string          `json:",omitempty"`
-	Expected resolve.Package `json:",omitempty"`
+	Err      string  `json:",omitempty"`
+	Expected Package `json:",omitempty"`
 }
 
 // CrawlRequest submits a package resolution job.
 type CrawlRequest struct {
-	resolve.Key
+	Key
 }
 
 // CrawlResponse is an Either Err ().

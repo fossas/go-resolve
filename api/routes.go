@@ -66,6 +66,10 @@ func New(db *sqlx.DB, queue *faktory.Client) *http.ServeMux {
 		if !ok {
 			return
 		}
+		if req.Name == "" || req.Revision == "" {
+			mustReply(w, CrawlResponse{Ok: false, Err: "BAD_CRAWL_TARGET"})
+			return
+		}
 
 		var res CrawlResponse
 		job := faktory.NewJob("resolve.Single", req.Name, req.Revision)
@@ -84,6 +88,7 @@ func New(db *sqlx.DB, queue *faktory.Client) *http.ServeMux {
 
 func handle(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// defer log.Trace(r.Method + r.RequestURI).Stop(nil)
 		defer func() {
 			if rec := recover(); rec != nil {
 				w.WriteHeader(http.StatusInternalServerError)

@@ -31,7 +31,7 @@ func main() {
 		revision := args[1].(string)
 
 		// Resolve the package to a hash.
-		pkg, err := resolve.Single(name, revision)
+		hash, err := resolve.Single(name, revision)
 		if err != nil {
 			return errors.Wrapf(err, "could not resolve single revision %s %s", name, revision)
 		}
@@ -44,7 +44,7 @@ func main() {
 				$1, $2, $3
 			) ON CONFLICT (package, revision) DO UPDATE SET
 				hash = $3
-		`, name, revision, pkg.Hash)
+		`, name, revision, hash)
 		if err != nil {
 			return errors.Wrapf(err, "could not update database for jid %s", ctx.Jid())
 		}
