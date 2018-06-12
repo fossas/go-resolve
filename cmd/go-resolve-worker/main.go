@@ -1,52 +1,69 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"flag"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"runtime"
 
 	worker "github.com/contribsys/faktory_worker_go"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"github.com/pkg/errors"
 
-	"github.com/fossas/go-resolve/resolve"
+	"github.com/fossas/go-resolve/api"
+	"github.com/fossas/go-resolve/index"
+	"github.com/fossas/go-resolve/models"
 )
 
 func main() {
-	log.Println("Starting up...")
-	db, err := sqlx.Connect("postgres", os.Getenv("POSTGRES_URL"))
+	faktoryURL := flag.String("faktory", "", "faktory URL")
+	pgURL := flag.String("db", "", "database URL")
+	apiURL := flag.String("api", "", "API URL")
+	secret := flag.String("secret", "", "API secret")
+	flag.Parse()
+
+	db, err := sqlx.Connect("postgres", *pgURL)
 	if err != nil {
 		log.Fatalf("Could not connect to postgres: %s", err.Error())
 	}
 	defer db.Close()
 
+	os.Setenv("FAKTORY_URL", *faktoryURL)
 	m := worker.NewManager()
 	m.Concurrency = runtime.GOMAXPROCS(0)
 	m.Queues = []string{"default"}
 
-	m.Register("resolve.Single", func(ctx worker.Context, args ...interface{}) error {
-		log.Printf("Starting job %s: resolve.Single(%#v, %#v)", ctx.Jid(), args[0], args[1])
-		name := args[0].(string)
-		revision := args[1].(string)
+	u, err := url.Parse(*apiURL)
+	if err != nil {
+		log.Fatalf("Bad API URL: %s", err.Error())
+	}
+	endpoint, err := u.Parse("/api/resolve")
+	if err != nil {
+		log.Fatalf("Bad API endpoint: %s", err.Error())
+	}
 
-		// Resolve the package to a hash.
-		hash, err := resolve.Single(name, revision)
-		if err != nil {
-			return errors.Wrapf(err, "could not resolve single revision %s %s", name, revision)
-		}
+	// TODO: add logging, metrics, tracing, and health.
+	m.Register("index.Package", func(ctx worker.Context, args ...interface{}) error {
+		log.Printf("Starting job %s: resolve.Single(%#v, %#v)", ctx.Jid(), args[0])
+		importpath := args[0].(string)
 
-		// Add hash to database.
-		_, err = db.Exec(`
-			INSERT INTO revisions (
-				package, revision, hash
-			)	VALUES (
-				$1, $2, $3
-			) ON CONFLICT (package, revision) DO UPDATE SET
-				hash = $3
-		`, name, revision, hash)
+		err := index.Repository(importpath, func(pkgs []models.Package) error {
+			body, err := json.Marshal(api.ResolveRequest{
+				Packages: pkgs,
+				Secret:   *secret,
+			})
+			if err != nil {
+				return err
+			}
+			_, err = http.Post(endpoint.String(), "application/json", bytes.NewReader(body))
+			return err
+		})
 		if err != nil {
-			return errors.Wrapf(err, "could not update database for jid %s", ctx.Jid())
+			return err
 		}
 
 		return nil

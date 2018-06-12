@@ -3,12 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
-	"path/filepath"
 
 	"github.com/fossas/go-resolve/hash"
-	"github.com/pkg/errors"
 )
 
 // Prints the usage string.
@@ -19,10 +19,13 @@ func usage() {
 
 func main() {
 	flag.Usage = usage
-	// TODO(@ilikebits): implement these flags when the API is implemented.
-	flag.String("name", "", "The package name to look up")
-	flag.String("hash", "", "The git tree-hash to look up")
+	// TODO: implement these flags.
+	flag.String("importpath", "", "The package import path to look up")
+	flag.String("hash", "", "The package hash to look up")
 	flag.String("revision", "", "The expected package revision")
+	flag.String("version", "", "The expected package version")
+	apiURL := flag.String("api", "", "The API URL")
+	verbose := flag.Bool("verbose", false, "Use verbose logging")
 	flag.Parse()
 
 	if flag.NArg() != 1 {
@@ -30,60 +33,22 @@ func main() {
 		os.Exit(2)
 	}
 
-	target, err := parseTarget(flag.Arg(0))
+	h, err := hash.Package(flag.Arg(0))
 	if err != nil {
-		log.Fatalf("Invalid input: %s", err.Error())
+		log.Fatalf("Could not compute package hash: %s", err.Error())
+	}
+	if *verbose {
+		fmt.Printf("Computed import path: %s\n", h.ImportPath)
+		fmt.Printf("Computed hash: %s\n", h.Hash)
 	}
 
-	h, err := hash.Dir(target)
+	res, err := http.Get(*apiURL + "/api/lookup/" + h.Hash)
 	if err != nil {
-		log.Fatalf("Could not compute tree hash: %s", err.Error())
+		log.Fatalf("API error: %s", err.Error())
 	}
-
-	cwd, err := os.Getwd()
+	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Fatalf("Could not get working directory: %s", err.Error())
+		log.Fatalf("Could not read body: %s", err.Error())
 	}
-	gopath := os.Getenv("GOPATH")
-	importPath, err := filepath.Rel(filepath.Join(gopath, "src"), cwd)
-	if err != nil {
-		log.Fatalf("Could not compute package import path: %s", err.Error())
-	}
-	fmt.Printf("%s %s\n", importPath, h)
-}
-
-// Takes a target string (which can be either an absolute path, a relative path, or a Go import path) and return an
-// absolute path to the target directory, or an error if the target is invalid.
-func parseTarget(target string) (string, error) {
-	if target == "" {
-		return "", errors.New("no package specified")
-	}
-
-	var targetPath string
-	switch target[0] {
-	case '/':
-		// Assume this is an absolute path
-		targetPath = target
-	case '.':
-		// Assume this is a relative path
-		cwd, err := os.Getwd()
-		if err != nil {
-			return "", errors.Wrap(err, "could not get working directory")
-		}
-		targetPath = filepath.Join(cwd, target)
-	default:
-		// Assume this is a Go import path
-		gopath := os.Getenv("GOPATH")
-		targetPath = filepath.Join(gopath, "src", target)
-	}
-
-	stat, err := os.Stat(targetPath)
-	if err != nil {
-		return "", errors.Wrap(err, "could not stat package directory")
-	}
-	if !stat.IsDir() {
-		return "", errors.New("specified path is not a package")
-	}
-
-	return targetPath, nil
+	fmt.Printf("%s\n", body)
 }

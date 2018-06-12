@@ -1,24 +1,34 @@
 package api
 
 import (
+	"net/http"
+
+	"github.com/go-chi/chi"
+
+	"github.com/ilikebits/go-core/api"
 	"github.com/jmoiron/sqlx"
-	"github.com/pkg/errors"
+
+	"github.com/fossas/go-resolve/models"
 )
 
-func lookupByHash(db *sqlx.DB, hash string) (Package, error) {
-	var found Package
-	err := db.Get(&found, "SELECT * FROM revisions WHERE hash = $1", hash)
-	if err != nil {
-		return Package{}, errors.Wrapf(err, "could not look up hash %#v", hash)
-	}
-	return found, nil
+type LookupResponse struct {
+	Package models.Package
 }
 
-func lookupByKey(db *sqlx.DB, key Key) (Package, error) {
-	var found Package
-	err := db.Get(&found, "SELECT * FROM revisions WHERE package = $1 AND revision = $2", key.Name, key.Revision)
-	if err != nil {
-		return Package{}, errors.Wrapf(err, "could not look up package %#v %#v", key.Name, key.Revision)
-	}
-	return found, nil
+func HandleLookup(db *sqlx.DB) http.HandlerFunc {
+	return api.Handle(func(r *api.Request) (*api.Response, *api.Error) {
+		hash := chi.URLParam(r.Raw, "hash")
+
+		var pkg models.Package
+		err := db.GetContext(r.Context(), &pkg, "SELECT * FROM packages WHERE hash = $1", hash)
+		if err != nil {
+			return nil, &api.Error{
+				Raw:            err,
+				HTTPStatusCode: http.StatusNotFound,
+				ErrorCode:      "HASH_NOT_FOUND",
+				Message:        "could not find hash",
+			}
+		}
+		return api.OK(LookupResponse{Package: pkg}), nil
+	})
 }

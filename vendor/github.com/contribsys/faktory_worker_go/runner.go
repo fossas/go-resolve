@@ -2,6 +2,7 @@ package faktory_worker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -36,7 +37,7 @@ type Manager struct {
 	Concurrency int
 	Queues      []string
 	Pool
-	Logger      Logger
+	Logger Logger
 
 	middleware []MiddlewareFunc
 	quiet      bool
@@ -102,6 +103,7 @@ func NewManager() *Manager {
 func (mgr *Manager) Run() {
 	// This will signal to Faktory that all connections from this process
 	// are worker connections.
+	rand.Seed(time.Now().UnixNano())
 	faktory.RandomProcessWid = strconv.FormatInt(rand.Int63(), 32)
 
 	if mgr.Pool == nil {
@@ -137,15 +139,22 @@ func heartbeat(mgr *Manager) {
 			// we don't care about errors, assume any network
 			// errors will heal eventually
 			_ = mgr.with(func(c *faktory.Client) error {
-				sig, err := c.Beat()
-				if sig != "" {
-					if sig == "terminate" {
-						handleEvent(Shutdown, mgr)
-					} else if sig == "quiet" {
-						handleEvent(Quiet, mgr)
-					}
+				data, err := c.Beat()
+				if err != nil || data == "" {
+					return err
 				}
-				return err
+				var hash map[string]string
+				err = json.Unmarshal([]byte(data), &hash)
+				if err != nil {
+					return err
+				}
+
+				if hash["state"] == "terminate" {
+					handleEvent(Shutdown, mgr)
+				} else if hash["state"] == "quiet" {
+					handleEvent(Quiet, mgr)
+				}
+				return nil
 			})
 		case <-mgr.done:
 			timer.Stop()
@@ -277,6 +286,9 @@ func (mgr *Manager) with(fn func(fky *faktory.Client) error) error {
 		return fmt.Errorf("Connection is not a Faktory client instance: %+v", conn)
 	}
 	err = fn(f)
+	if err != nil {
+		pc.MarkUnusable()
+	}
 	conn.Close()
 	return err
 }
