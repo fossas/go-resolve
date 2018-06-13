@@ -7,3 +7,7 @@ type Package struct {
 	Hash       string
 	Version    string
 }
+
+func (p *Package) String() string {
+	return p.ImportPath + " " + p.Revision + " " + p.Hash
+}

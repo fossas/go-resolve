@@ -36,10 +36,19 @@
   version = "v3.3.2"
 
 [[projects]]
+  name = "github.com/go-chi/render"
+  packages = ["."]
+  revision = "3215478343fbc559bd3fc08f7031bb134d6bdad5"
+  version = "v1.0.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/ilikebits/go-core"
-  packages = ["api"]
-  revision = "4ed09a0bc44b1f986d57bb4cf04f172ae8be4606"
+  packages = [
+    "api",
+    "log"
+  ]
+  revision = "0637633d3b02420a16bc3a6ca7c99dccb50d34f4"
 
 [[projects]]
   branch = "master"
@@ -155,7 +164,7 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["windows"]
-  revision = "bff228c7b664c5fce602223a05fb708fd8654986"
+  revision = "a9e25c09b96b8870693763211309e213c6ef299d"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -238,6 +247,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "17d7d9054e071896757134abfe18a90984cd50db819e653c10463548a4db1aab"
+  inputs-digest = "91ae9dc37cd51d0efc1bb4e3149db04b71fa49c0ab92d1a06b5f67040ee81068"
   solver-name = "gps-cdcl"
   solver-version = 1

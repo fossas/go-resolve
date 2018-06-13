@@ -4,11 +4,11 @@ package index
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	"github.com/ilikebits/go-core/log"
 	"github.com/pkg/errors"
 	git "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
@@ -19,6 +19,7 @@ import (
 
 // Repository indexes all revisions of all packages in a single repository that
 // contains a Go package.
+// TODO: thread a context through all of these.
 func Repository(importpath string, handler func(pkgs []models.Package) error) error {
 	// Pick a random temporary directory to download into. This prevents two
 	// different threads from clobbering each others' $GOPATHs.
@@ -52,11 +53,24 @@ func Repository(importpath string, handler func(pkgs []models.Package) error) er
 		return errors.Wrap(err, "could not open log")
 	}
 	defer iter.Close()
+	worktree, err := repo.Worktree()
+	if err != nil {
+		return errors.Wrap(err, "could not open worktree")
+	}
 
+	log.Debug().Msg("computing hashes")
 	// Compute hashes for all revisions.
 	err = iter.ForEach(func(commit *object.Commit) error {
+		// Check out revision.
+		err := worktree.Checkout(&git.CheckoutOptions{
+			Hash: commit.Hash,
+		})
+		if err != nil {
+			return errors.Wrap(err, "unable to checkout revision during iteration")
+		}
+
 		// Compute hashes for all packages within repository.
-		pkgs, err := hash.Dir(repopath)
+		pkgs, err := hash.Dir(gopath, repopath)
 		if err != nil {
 			return err
 		}
@@ -83,12 +97,12 @@ func Repository(importpath string, handler func(pkgs []models.Package) error) er
 
 // FindRepository finds the repository containing a directory.
 func FindRepository(dirname string) (string, error) {
-	log.Printf("FindRepository(%#v)", dirname)
+	log.Debug().Str("dirname", dirname).Msg("FindRepository")
 	for curr := dirname; curr != "." && curr != "/"; curr = filepath.Dir(curr) {
-		log.Printf("os.Stat(%#v)", filepath.Join(curr, ".git"))
-		info, err := os.Stat(filepath.Join(curr, ".git"))
-		log.Printf("info = %#v", info)
-		log.Printf("err = %#v", err)
+		vcs := filepath.Join(curr, ".git")
+		log.Debug().Str("name", vcs).Msg("os.Stat")
+		info, err := os.Stat(vcs)
+		log.Debug().Str("info", fmt.Sprintf("%#v", info)).Err(err).Msg("os.Stat result")
 		if os.IsNotExist(err) {
 			continue
 		}

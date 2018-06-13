@@ -23,6 +23,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -30,7 +31,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/ilikebits/go-core/log"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/fossas/go-resolve/models"
 )
@@ -99,17 +102,24 @@ func Package(importpath string) (models.Package, error) {
 
 // Dir computes the package hashes of all packages within a given
 // directory.
-func Dir(dirname string) ([]models.Package, error) {
+func Dir(gopath, dirname string) ([]models.Package, error) {
+	log.Debug().Str("dirname", dirname).Msg("hash.Dir")
 	// Run `go list -json <dirname>/...`
-	cmd := exec.Command("go", "list", "-json", filepath.Join(dirname, "..."))
+	cmd := exec.Command("go", "list", "-json", "./...")
+	cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%s", gopath))
+	cmd.Dir = dirname
+	log.Debug().Str("cmd", fmt.Sprintf("%#v", cmd)).Msg("raw command")
 	out, err := cmd.Output()
 	if err != nil {
 		// Ignore exit errors: `go list` can partially succeed, and will still exit
 		// 1 on warnings.
-		if _, ok := err.(*exec.ExitError); !ok {
+		log.Error().Err(err).Msg("go list error")
+		if e, ok := err.(*exec.ExitError); !ok {
+			log.Error().Str("stderr", string(e.Stderr)).Msg("go list stderr output")
 			return nil, errors.Wrap(err, "could not run `go list` for multiple packages")
 		}
 	}
+	log.Debug().Str("output", string(out)).Msg("raw go list output")
 
 	// The output of `go list -json <packages>` with more than one package is
 	// actually newline-delimited JSON objects, not one valid JSON object.
@@ -123,14 +133,22 @@ func Dir(dirname string) ([]models.Package, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal `go list` output for multiple packages")
 	}
+	arr := zerolog.Arr()
+	for _, pkg := range pkgs {
+		arr = arr.Str(pkg.ImportPath)
+	}
+	log.Debug().Array("packages", arr).Msg("go list ./... output")
 
 	// Compute hash for each package.
+	log.Debug().Msg("computing hashes")
 	var hashed []models.Package
 	for _, pkg := range pkgs {
 		hash, err := Hash(pkg.Dir, pkg.files())
 		if err != nil {
+			log.Error().Err(err).Msg("could not compute hash")
 			return nil, err
 		}
+		log.Debug().Str("hash", hash).Str("package", pkg.ImportPath).Str("dir", pkg.Dir).Msg("computed hash")
 		hashed = append(hashed, models.Package{
 			ImportPath: pkg.ImportPath,
 			Hash:       hash,

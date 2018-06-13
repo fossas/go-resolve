@@ -11,6 +11,10 @@
   version = "3.3.2"
 
 [[constraint]]
+  name = "github.com/go-chi/render"
+  version = "1.0.1"
+
+[[constraint]]
   branch = "master"
   name = "github.com/ilikebits/go-core"
 
@@ -25,6 +29,10 @@
 [[constraint]]
   name = "github.com/pkg/errors"
   version = "0.8.0"
+
+[[constraint]]
+  name = "github.com/rs/zerolog"
+  version = "1.8.0"
 
 [[constraint]]
   name = "gopkg.in/src-d/go-git.v4"

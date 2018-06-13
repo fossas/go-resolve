@@ -2,11 +2,11 @@ package main
 
 import (
 	"flag"
-	"log"
 	"net/http"
 	"os"
 
 	faktory "github.com/contribsys/faktory/client"
+	"github.com/ilikebits/go-core/log"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 
@@ -17,17 +17,23 @@ func main() {
 	faktoryURL := flag.String("faktory", "", "faktory URL")
 	pgURL := flag.String("db", "", "database URL")
 	secret := flag.String("secret", "", "API secret")
+	debug := flag.Bool("debug", false, "enable debug logging")
 	flag.Parse()
 
+	log.Init(*debug)
+
+	log.Debug().Msg("initializing server")
+	log.Debug().Msg("connecting to faktory")
 	os.Setenv("FAKTORY_URL", *faktoryURL)
 	queue, err := faktory.Open()
 	if err != nil {
-		log.Fatalf("Could not connect to faktory: %s", err.Error())
+		log.Fatal().Err(err).Msg("could not connect to faktory")
 	}
+	log.Debug().Msg("connecting to postgres")
 	defer queue.Close()
 	db, err := sqlx.Connect("postgres", *pgURL)
 	if err != nil {
-		log.Fatalf("Could not connect to postgres: %s", err.Error())
+		log.Fatal().Err(err).Msg("could not connect to postgres")
 	}
 	defer db.Close()
 
@@ -38,8 +44,9 @@ func main() {
 		Handler: mux,
 	}
 
+	log.Debug().Msg("starting server")
 	err = server.ListenAndServe()
 	if err != nil {
-		log.Fatalf("Could not initialize server: %s", err.Error())
+		log.Fatal().Err(err).Msg("could not start server")
 	}
 }
