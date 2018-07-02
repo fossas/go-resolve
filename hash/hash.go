@@ -5,18 +5,17 @@
 //
 // Source files are the union of a package's:
 //
-// - `GoFiles`
-// - `CgoFiles`
-// - `CFiles`
-// - `CXXFiles`
-// - `MFiles`
-// - `HFiles`
-// - `FFiles`
-// - `SFiles`
-// - `SwigFiles`
-// - `SwigCXXFiles`
-// - `SysoFiles`
-//
+//   - GoFiles
+//   - CgoFiles
+//   - CFiles
+//   - CXXFiles
+//   - MFiles
+//   - HFiles
+//   - FFiles
+//   - SFiles
+//   - SwigFiles
+//   - SwigCXXFiles
+//   - SysoFiles
 package hash
 
 import (

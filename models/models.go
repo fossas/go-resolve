@@ -1,11 +1,14 @@
 // Package models implements common application-level models.
 package models
 
+import "time"
+
 type Package struct {
-	ImportPath string
-	Revision   string
-	Hash       string
-	Version    string
+	ImportPath  string    `db:"import_path"`
+	Revision    string    `db:"revision"`
+	Hash        string    `db:"hash"`
+	Version     string    `db:"version"`
+	LastUpdated time.Time `db:"last_updated"`
 }
 
 func (p *Package) String() string {

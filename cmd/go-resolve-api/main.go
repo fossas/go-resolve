@@ -1,9 +1,13 @@
+// Package go-resolve-api implements the API for go-resolve.
 package main
 
 import (
+	"context"
 	"flag"
 	"net/http"
 	"os"
+	"os/signal"
+	"time"
 
 	faktory "github.com/contribsys/faktory/client"
 	"github.com/ilikebits/go-core/log"
@@ -44,9 +48,21 @@ func main() {
 		Handler: mux,
 	}
 
-	log.Debug().Msg("starting server")
-	err = server.ListenAndServe()
-	if err != nil {
-		log.Fatal().Err(err).Msg("could not start server")
-	}
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
+
+	go func() {
+		log.Debug().Msg("starting server")
+		err := server.ListenAndServe()
+		if err != nil {
+			log.Fatal().Err(err).Msg("could not start server")
+		}
+	}()
+
+	<-stop
+	log.Info().Msg("got signal, shutting down")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	server.Shutdown(ctx)
+	log.Info().Msg("stopped")
+	cancel()
 }

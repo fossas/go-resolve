@@ -1,3 +1,4 @@
+// Package go-resolve-worker implements the indexing workers for go-resolve.
 package main
 
 import (
