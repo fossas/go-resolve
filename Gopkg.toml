@@ -1,6 +1,6 @@
 [[constraint]]
   name = "github.com/contribsys/faktory"
-  version = "0.7.0-1"
+  version = "v0.7.0-1"
 
 [[constraint]]
   branch = "master"

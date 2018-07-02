@@ -11,7 +11,7 @@
   branch = "master"
   name = "github.com/contribsys/faktory_worker_go"
   packages = ["."]
-  revision = "39f53f50d0d03ba9655d73c683e2a14a4b0c3738"
+  revision = "de58a756280d12741a9b36e7acc26aa9e639b178"
 
 [[projects]]
   name = "github.com/emirpasic/gods"
@@ -63,7 +63,7 @@
     ".",
     "reflectx"
   ]
-  revision = "2aeb6a910c2b94f2d5eb53d9895d80e27264ec41"
+  revision = "0dae4fefe7c0e190f7b5a78dac28a1c82cc8d849"
 
 [[projects]]
   name = "github.com/kevinburke/ssh_config"
@@ -141,6 +141,7 @@
     "ed25519",
     "ed25519/internal/edwards25519",
     "internal/chacha20",
+    "internal/subtle",
     "openpgp",
     "openpgp/armor",
     "openpgp/elgamal",
@@ -152,19 +153,19 @@
     "ssh/agent",
     "ssh/knownhosts"
   ]
-  revision = "8ac0e0d97ce45cd83d1d7243c060cb8461dda5e9"
+  revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context"]
-  revision = "db08ff08e8622530d9ed3a0e8ac279f6d4c02196"
+  revision = "4cb1c02c05b0e749b0365f61ae859a8e0cfceed9"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["windows"]
-  revision = "a9e25c09b96b8870693763211309e213c6ef299d"
+  revision = "7138fd3d9dc8335c567ca206f4333fb75eb05d56"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -188,8 +189,8 @@
     "osfs",
     "util"
   ]
-  revision = "df053870ae7070b0350624ba5a22161ba3796cc0"
-  version = "v4.1.1"
+  revision = "83cf655d40b15b427014d7875d10850f96edba14"
+  version = "v4.2.0"
 
 [[projects]]
   name = "gopkg.in/src-d/go-git.v4"
