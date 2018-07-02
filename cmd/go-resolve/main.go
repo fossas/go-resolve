@@ -1,4 +1,4 @@
-// Package go-resolve implements the `go-resolve` command line utility.
+// Package go-resolve implements the go-resolve command line utility.
 package main
 
 import (

@@ -11,7 +11,8 @@ import (
 // IndexRequest contains the arguments for an indexing request.
 type IndexRequest struct {
 	ImportPath  string
-	IncludeDeps bool
+	Revision    string
+	IncludeDeps bool // Only valid when Revision is specified.
 }
 
 // Index queues indexing jobs for packages.
