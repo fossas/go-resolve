@@ -8,27 +8,30 @@ import (
 	"github.com/ilikebits/go-core/log"
 )
 
+// IndexRequest contains the arguments for an indexing request.
 type IndexRequest struct {
-	ImportPath string
+	ImportPath  string
+	IncludeDeps bool
 }
 
-func HandleIndex(queue *faktory.Client) http.HandlerFunc {
-	return api.Handle(func(r *api.Request) (*api.Response, *api.Error) {
+// Index queues indexing jobs for packages.
+func Index(queue *faktory.Client) http.HandlerFunc {
+	return api.Handle(func(r *api.Request) api.Renderable {
 		var req IndexRequest
 		apiErr := r.JSON(&req)
 		if apiErr != nil {
-			return nil, apiErr
+			return apiErr
 		}
 
 		logger := log.From(r.Context())
-		logger.Debug().Str("ImportPath", req.ImportPath).Msg("HandleIndex")
+		logger.Debug().Str("ImportPath", req.ImportPath).Msg("Index")
 		job := faktory.NewJob("index.Package", req.ImportPath)
 		logger.Debug().Str("JID", job.Jid).Msg("queuing index.Package job")
 		err := queue.Push(job)
 		if err != nil {
 			logger.Error().Err(err).Str("JID", job.Jid).Msg("could not queue job")
-			return nil, api.ErrorInternal(err)
+			return api.ErrorInternal(err)
 		}
-		return api.OK(nil), nil
+		return api.OK(nil)
 	})
 }

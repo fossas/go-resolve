@@ -42,6 +42,9 @@ type goPkg struct {
 	ImportPath string
 	Dir        string
 
+	Imports []string
+	Deps    []string
+
 	GoFiles      []string
 	CgoFiles     []string
 	CFiles       []string
@@ -55,7 +58,7 @@ type goPkg struct {
 	SysoFiles    []string
 }
 
-func (pkg *goPkg) files() []string {
+func (pkg *goPkg) SourceFiles() []string {
 	var files []string
 	files = append(files, pkg.GoFiles...)
 	files = append(files, pkg.CgoFiles...)
@@ -88,7 +91,7 @@ func Package(importpath string) (models.Package, error) {
 	}
 
 	// Compute hash.
-	hash, err := Hash(pkg.Dir, pkg.files())
+	hash, err := Hash(pkg.Dir, pkg.SourceFiles())
 	if err != nil {
 		return models.Package{}, err
 	}
@@ -96,6 +99,10 @@ func Package(importpath string) (models.Package, error) {
 	return models.Package{
 		ImportPath: pkg.ImportPath,
 		Hash:       hash,
+
+		SourceFiles: pkg.SourceFiles(),
+		Imports:     pkg.Imports,
+		Deps:        pkg.Deps,
 	}, nil
 }
 
@@ -142,7 +149,7 @@ func Dir(gopath, dirname string) ([]models.Package, error) {
 	log.Debug().Msg("computing hashes")
 	var hashed []models.Package
 	for _, pkg := range pkgs {
-		hash, err := Hash(pkg.Dir, pkg.files())
+		hash, err := Hash(pkg.Dir, pkg.SourceFiles())
 		if err != nil {
 			log.Error().Err(err).Msg("could not compute hash")
 			return nil, err

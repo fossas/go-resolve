@@ -4,16 +4,15 @@ import "net/http"
 
 // Response wraps a successful API response.
 type Response struct {
-	HTTPStatusCode int         `json:"-"`
-	Result         interface{} `json:"result"`
+	StatusCode int         `json:"-"`
+	Result     interface{} `json:"result"`
 }
 
-// Response implements renderable.
-func (r *Response) httpStatusCode() int {
-	return r.HTTPStatusCode
+func (r *Response) HTTPStatusCode() int {
+	return r.StatusCode
 }
 
-func (r *Response) body() interface{} {
+func (r *Response) Body() interface{} {
 	return renderedResponse{
 		Ok:     true,
 		Result: r.Result,
@@ -28,7 +27,7 @@ type renderedResponse struct {
 // OK is a helper for creating Responses with a 200 status code.
 func OK(result interface{}) *Response {
 	return &Response{
-		HTTPStatusCode: http.StatusOK,
-		Result:         result,
+		StatusCode: http.StatusOK,
+		Result:     result,
 	}
 }

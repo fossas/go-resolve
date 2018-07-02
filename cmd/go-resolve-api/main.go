@@ -20,7 +20,6 @@ import (
 func main() {
 	faktoryURL := flag.String("faktory", "", "faktory URL")
 	pgURL := flag.String("db", "", "database URL")
-	secret := flag.String("secret", "", "API secret")
 	debug := flag.Bool("debug", false, "enable debug logging")
 	flag.Parse()
 
@@ -42,7 +41,7 @@ func main() {
 	defer db.Close()
 
 	addr := ":80"
-	mux := api.New(db, queue, *secret)
+	mux := api.New(db, queue)
 	server := &http.Server{
 		Addr:    addr,
 		Handler: mux,

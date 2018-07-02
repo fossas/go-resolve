@@ -25,7 +25,6 @@ services:
       "go-resolve-api",
       "-db", "postgresql://local:hunter2@db:5432/goresolve?sslmode=disable",
       "-faktory", "tcp://faktory:7419",
-      "-secret", "foobarbaz",
       "-debug"
     ]
     depends_on:
@@ -40,8 +39,6 @@ services:
       "go-resolve-worker",
       "-db", "postgresql://local:hunter2@db:5432/goresolve?sslmode=disable",
       "-faktory", "tcp://faktory:7419",
-      "-secret", "foobarbaz",
-      "-api", "http://go-resolve-api",
       "-debug"
     ]
     depends_on:

@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"gopkg.in/src-d/go-git.v4/plumbing"
+
 	"github.com/ilikebits/go-core/log"
 	"github.com/pkg/errors"
 	git "gopkg.in/src-d/go-git.v4"
@@ -22,52 +24,80 @@ import (
 //
 // This implementation is thread-safe. It sets up a temporary GOPATH on each
 // invocation to run `go get`.
-func Repository(importpath string, handler func(pkgs []models.Package) error) error {
+func Repository(importpath string) ([]models.Package, error) {
 	// TODO: thread a context through all of these.
+	// TODO: support more than just Git.
 
 	// Pick a random temporary directory to download into. This prevents two
 	// different threads from clobbering each others' $GOPATHs.
 	gopath, err := ioutil.TempDir("", "go-resolve-")
 	if err != nil {
-		return errors.Wrap(err, "could not get temp dir")
+		return nil, errors.Wrap(err, "could not get temp dir")
 	}
+	defer func() {
+		if err != nil {
+			err = os.RemoveAll(gopath)
+		}
+	}()
 
 	// Download the repository.
 	cmd := exec.Command("go", "get", importpath)
 	cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%s", gopath))
 	err = cmd.Run()
 	if err != nil {
-		return errors.Wrap(err, "could not run `go get`")
+		return nil, errors.Wrap(err, "could not run `go get`")
 	}
 
 	// Find repository containing the package.
-	packagepath := filepath.Join(gopath, "src", importpath)
-	repopath, err := FindRepository(packagepath)
+	pkgpath := filepath.Join(gopath, "src", importpath)
+	vcs, repopath, err := FindRepository(pkgpath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Open repository.
 	repo, err := git.PlainOpen(repopath)
 	if err != nil {
-		return errors.Wrap(err, "could not open repository")
+		return nil, errors.Wrap(err, "could not open repository")
 	}
-	iter, err := repo.Log(&git.LogOptions{})
+	logItr, err := repo.Log(&git.LogOptions{})
 	if err != nil {
-		return errors.Wrap(err, "could not open log")
+		return nil, errors.Wrap(err, "could not open log")
 	}
-	defer iter.Close()
+	defer logItr.Close()
 	worktree, err := repo.Worktree()
 	if err != nil {
-		return errors.Wrap(err, "could not open worktree")
+		return nil, errors.Wrap(err, "could not open worktree")
+	}
+	remote, err := repo.Remote("origin")
+	if err != nil {
+		return nil, errors.Wrap(err, "could not open remote `origin`")
+	}
+	tagItr, err := repo.Tags()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not open tags")
 	}
 
-	log.Debug().Msg("computing hashes")
+	// Get tag set.
+	tags := make(map[string]string)
+	tagItr.ForEach(func(tag *plumbing.Reference) error {
+		name := tag.Name()
+		if name.IsTag() {
+			tags[tag.Hash().String()] = name.Short()
+		}
+		return nil
+	})
+
 	// Compute hashes for all revisions.
-	err = iter.ForEach(func(commit *object.Commit) error {
+	// TODO: set package versions from tags.
+	log.Debug().Msg("computing hashes")
+	var output []models.Package
+	err = logItr.ForEach(func(commit *object.Commit) error {
+		h := commit.Hash
+
 		// Check out revision.
 		err := worktree.Checkout(&git.CheckoutOptions{
-			Hash: commit.Hash,
+			Hash: h,
 		})
 		if err != nil {
 			return errors.Wrap(err, "unable to checkout revision during iteration")
@@ -79,31 +109,38 @@ func Repository(importpath string, handler func(pkgs []models.Package) error) er
 			return err
 		}
 
-		// Set package revisions.
-		// TODO: set package versions from tags.
-		for i := range pkgs {
-			pkgs[i].Revision = commit.Hash.String()
+		// Set revision metadata.
+		repoURL := remote.Config().URLs[0]
+		for _, pkg := range pkgs {
+			rev := h.String()
+			pkg.VCS = vcs
+			pkg.Repository = repoURL
+			pkg.Revision = rev
+			if tag, ok := tags[rev]; ok {
+				pkg.Version = tag
+			}
+			output = append(output)
 		}
-
-		// Upload hashes for this revision.
-		err = handler(pkgs)
-		if err != nil {
-			return err
-		}
-
 		return nil
 	})
 	if err != nil {
-		return errors.Wrap(err, "could not iterate over revisions")
+		return nil, errors.Wrap(err, "could not iterate over revisions")
 	}
-	return nil
+	return output, nil
 }
 
 // FindRepository finds the repository containing a directory.
-func FindRepository(dirname string) (string, error) {
+func FindRepository(dirname string) (models.VCS, string, error) {
+	// TODO: support more than just Git.
+
 	log.Debug().Str("dirname", dirname).Msg("FindRepository")
-	for curr := dirname; curr != "." && curr != "/"; curr = filepath.Dir(curr) {
+	abs, err := filepath.Abs(dirname)
+	if err != nil {
+		return -1, "", errors.Wrap(err, "could not get absolute path")
+	}
+	for curr := abs; curr != "." && curr != "/"; curr = filepath.Dir(curr) {
 		vcs := filepath.Join(curr, ".git")
+
 		log.Debug().Str("name", vcs).Msg("os.Stat")
 		info, err := os.Stat(vcs)
 		log.Debug().Str("info", fmt.Sprintf("%#v", info)).Err(err).Msg("os.Stat result")
@@ -111,11 +148,12 @@ func FindRepository(dirname string) (string, error) {
 			continue
 		}
 		if err != nil {
-			return "", errors.Wrap(err, "could not stat")
+			return -1, "", errors.Wrap(err, "could not stat")
 		}
+
 		if info.IsDir() {
-			return curr, nil
+			return models.Git, curr, nil
 		}
 	}
-	return "", errors.New("could not find repository")
+	return -1, "", errors.New("could not find repository")
 }

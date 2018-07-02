@@ -14,6 +14,12 @@
   revision = "de58a756280d12741a9b36e7acc26aa9e639b178"
 
 [[projects]]
+  name = "github.com/davecgh/go-spew"
+  packages = ["spew"]
+  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
+  version = "v1.1.0"
+
+[[projects]]
   name = "github.com/emirpasic/gods"
   packages = [
     "containers",
@@ -48,7 +54,7 @@
     "api",
     "log"
   ]
-  revision = "0637633d3b02420a16bc3a6ca7c99dccb50d34f4"
+  revision = "29b701123e852f43a9d68d037bb5a28bc29793a6"
 
 [[projects]]
   branch = "master"
@@ -99,6 +105,12 @@
   version = "v0.8.0"
 
 [[projects]]
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/rs/zerolog"
   packages = [
     ".",
@@ -125,6 +137,29 @@
   ]
   revision = "f187355171c936ac84a82793659ebb4936bc1c23"
   version = "v1.3.0"
+
+[[projects]]
+  name = "github.com/stretchr/testify"
+  packages = ["assert"]
+  revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
+  version = "v1.2.2"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/volatiletech/inflect"
+  packages = ["."]
+  revision = "e7201282ae8da26cd97aed2e516f75c0bd91bb93"
+
+[[projects]]
+  name = "github.com/volatiletech/sqlboiler"
+  packages = [
+    "boil",
+    "queries",
+    "queries/qm",
+    "strmangle"
+  ]
+  revision = "d4bc831c7df09032b8290a3ddfb7bb41a0866934"
+  version = "v2.7.3"
 
 [[projects]]
   branch = "master"
@@ -159,7 +194,7 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context"]
-  revision = "4cb1c02c05b0e749b0365f61ae859a8e0cfceed9"
+  revision = "87b3feba568e144938625fc5d80ec92566c1a8fe"
 
 [[projects]]
   branch = "master"
@@ -240,6 +275,15 @@
   version = "v4.4.1"
 
 [[projects]]
+  name = "gopkg.in/volatiletech/null.v6"
+  packages = [
+    ".",
+    "convert"
+  ]
+  revision = "0bef4e07ae1b27a2a4efa23bbb3006c8c3d2e01d"
+  version = "v6.4"
+
+[[projects]]
   name = "gopkg.in/warnings.v0"
   packages = ["."]
   revision = "ec4a0fea49c7b46c2aeb0b51aac55779c607e52b"
@@ -248,6 +292,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "91ae9dc37cd51d0efc1bb4e3149db04b71fa49c0ab92d1a06b5f67040ee81068"
+  inputs-digest = "82383d368ea70cc75e3ad1e81d59c01e69bf06083542c3b88e90088c8c7d8439"
   solver-name = "gps-cdcl"
   solver-version = 1

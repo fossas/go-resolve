@@ -6,8 +6,8 @@ import (
 )
 
 var (
-	dbg    bool
-	logger Logger
+	dbg    = false
+	logger = Logger{&log.Logger}
 )
 
 func Init(debug bool) {
@@ -17,7 +17,6 @@ func Init(debug bool) {
 	} else {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
-	logger = Logger{&log.Logger}
 }
 
 func With() zerolog.Context {

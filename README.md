@@ -25,29 +25,27 @@ go-resolve ./vendor/github.com/user/project/package
 Hash lookups attempt to resolve a package's revision given its package hash.
 
 ```bash
-$ go-resolve github.com/project/foo 
+$ go-resolve ./vendor/github.com/project/foo/baz
 {
-  "packages": {
+  "Hashes": {
+    "abcd": "github.com/foo/bar/baz"
+  },
+  "Packages": {
     "github.com/foo/bar/baz": {
-      "found": true,
-      "repository": "github.com/foo/bar",
-      "ambiguous": false, # may be true if best revision is ambiguous
-      "revision": {
-        # the best revision
-        "hash": "abcd",
-        "timestamp": "January 1st, 2018"
+      "Ambiguous": true,
+      "Repository": "github.com/foo/bar",
+      "Revision": {
+        "Hash": "abcd",
+        "Timestamp": "January 1st, 2018"
       },
-      "candidates": [
-        # revision candidates, from newest to oldest
-        {
-          "hash": "abcd",
-          "timestamp": "January 1st, 2018",
-          "matches": [
-            "github.com/foo/bar",
-            "github.com/foo/bar/baz"
-          ]
-        }
-      ]
+      "Candidates": [{
+        "Hash": "defg",
+        "Timestamp": "January 2nd, 2008",
+        "Matches": [
+          "github.com/foo/bar",
+          "github.com/foo/bar/baz"
+        ]
+      }]
     }
   }
 }
@@ -77,10 +75,10 @@ $ go-resolve -vendor ./vendor
 {"ok": false, ""}
 ```
 
-### Local modification lookup
+### Integrity lookup
 
-Local modification lookups check whether a package's actual, on-disk hash
-matches its expected hash given an expected revision.
+Integrity lookups check whether a package's actual, on-disk hash matches its
+expected hash given an expected revision.
 
 ```bash
 $ go-resolve -revision expected-revision-commit-hash github.com/project/foo 
@@ -117,17 +115,21 @@ Source files are the union of a package's:
 ### Package hash ambiguity
 
 Package hashes may be _ambiguous_. That is, a package hash may be present in
-multiple revisions, because new revisions do not necessarily change all packages
-within the repository. For single hash lookups, this means that a package hash
-lookup may return multiple possible revisions.
+multiple revisions, because repositories contain many packages and new revisions
+do not necessarily change all packages within the repository. For single hash
+lookups, this means that a package hash lookup may return multiple possible
+revisions.
 
 For multi-hash lookups, `go-resolve` attempts to disambiguate package hashes by
 preferring revisions which match all package hashes of packages within the same
 repository.
 
-```sql
-SELECT * FROM packages GROUP BY packages.repository_id;
-(SELECT * FROM revisions JOIN packages ON revisions.revision_id = packages.revision_id WHERE packages.hash = $1)
-INTERSECT
-(SELECT * FROM revisions JOIN packages ON revisions.revision_id = packages.revision_id WHERE packages.hash = $2);
-```
+### Revision selection
+
+When multiple revisions may match a single package, a "best" revision is
+selected by the following criteria:
+
+1. If performing a multi-hash lookup, sort revisions in descending order by the
+  number of packages they match.
+2. To tiebreak, sort revisions in descending order by time.
+3. Pick the first revision.

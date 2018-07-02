@@ -7,15 +7,11 @@ import (
 )
 
 // Handle transforms an API handler into an http.HandlerFunc.
-func Handle(handler func(req *Request) (*Response, *Error)) http.HandlerFunc {
+func Handle(handler func(req *Request) Renderable) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 
-		res, err := handler(newRequest(r))
-		if err != nil {
-			render(w, err)
-			return
-		}
+		res := handler(newRequest(r))
 		render(w, res)
 	}
 }
