@@ -73,7 +73,7 @@ func (pkg *goPkg) files() []string {
 
 // Package computes the package hash of the given import path.
 func Package(importpath string) (models.Package, error) {
-	// Run `go list -json <importpath>`
+	// Run `go list -json <importpath>`.
 	cmd := exec.Command("go", "list", "-json", importpath)
 	out, err := cmd.Output()
 	if err != nil {

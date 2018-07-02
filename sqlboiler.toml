@@ -1,0 +1,9 @@
+output="generated/models"
+no-tests=true
+[postgres]
+  dbname="goresolve"
+  host="localhost"
+  port=5432
+  user="local"
+  pass="hunter2"
+  sslmode="disable"

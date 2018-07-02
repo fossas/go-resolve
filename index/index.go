@@ -19,8 +19,12 @@ import (
 
 // Repository indexes all revisions of all packages in a single repository that
 // contains a Go package.
-// TODO: thread a context through all of these.
+//
+// This implementation is thread-safe. It sets up a temporary GOPATH on each
+// invocation to run `go get`.
 func Repository(importpath string, handler func(pkgs []models.Package) error) error {
+	// TODO: thread a context through all of these.
+
 	// Pick a random temporary directory to download into. This prevents two
 	// different threads from clobbering each others' $GOPATHs.
 	gopath, err := ioutil.TempDir("", "go-resolve-")

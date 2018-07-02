@@ -20,14 +20,19 @@ func usage() {
 
 func main() {
 	flag.Usage = usage
-	// TODO: implement these flags.
-	flag.String("importpath", "", "The package import path to look up")
-	flag.String("hash", "", "The package hash to look up")
-	flag.String("revision", "", "The expected package revision")
-	flag.String("version", "", "The expected package version")
+	vendorMode := flag.Bool("vendor", false, "Perform lookup in vendor mode")
+	hashFlag := flag.String("hash", "", "The package hash to look up")
+	expectedRevision := flag.String("revision", "", "The expected package revision")
+	expectedVersion := flag.String("version", "", "The expected package version")
 	apiURL := flag.String("api", "", "The API URL")
 	verbose := flag.Bool("verbose", false, "Use verbose logging")
 	flag.Parse()
+
+	// TODO: implement these flags.
+	_ = vendorMode
+	_ = hashFlag
+	_ = expectedRevision
+	_ = expectedVersion
 
 	if flag.NArg() != 1 {
 		usage()
@@ -39,8 +44,8 @@ func main() {
 		log.Fatalf("Could not compute package hash: %s", err.Error())
 	}
 	if *verbose {
-		fmt.Printf("Computed import path: %s\n", h.ImportPath)
-		fmt.Printf("Computed hash: %s\n", h.Hash)
+		log.Printf("Computed import path: %s\n", h.ImportPath)
+		log.Printf("Computed hash: %s\n", h.Hash)
 	}
 
 	res, err := http.Get(*apiURL + "/api/lookup/" + h.Hash)
