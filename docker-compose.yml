@@ -3,7 +3,7 @@ version: '3'
 services:
   # Third-party services
   db:
-    image: postgres:10.3-alpine
+    image: postgres:10.5-alpine
     environment:
       POSTGRES_USER: local
       POSTGRES_PASSWORD: hunter2
@@ -11,7 +11,7 @@ services:
     ports:
       - 5432:5432
   faktory:
-    image: contribsys/faktory:0.7.0
+    image: contribsys/faktory:0.8.0
     expose:
       - 7419
     ports:
