@@ -2,80 +2,75 @@
 
 ## Quickstart
 
-```bash
-go get -u github.com/fossas/go-resolve/cmd/go-resolve
-
-go-resolve ./vendor/github.com/user/project/package
-```
-
-## Overview
-
-`go-resolve` is a set of three components: `go-resolve`, `go-resolve-api`, and
-`go-resolve-worker`, that together compose a Go package revision resolver.
-
-- `go-resolve` is a command-line utility for computing and looking up a package
-  hash on a `go-resolve-api` server.
-- `go-resolve-api` is an API server for queuing and querying hashes.
-- `go-resolve-worker` is an asynchronous worker for computing package hashes.
-
-## Usage
-
-### Hash lookup
-
-Hash lookups attempt to resolve a package's revision given its package hash.
+`go-resolve` is a command line tool for finding the revisions of Go packages,
+even in projects without build tool support. It works by looking up package
+hashes against the `go-resolve` API.
 
 ```bash
-$ go-resolve ./vendor/github.com/project/foo/baz
+$ go get -u github.com/fossas/go-resolve/cmd/go-resolve
+
+$ go-resolve ./vendor/github.com/user/project/package
 {
   "Hashes": {
-    "abcd": "github.com/foo/bar/baz"
+    "notarealhash": "github.com/user/project/package"
   },
   "Packages": {
-    "github.com/foo/bar/baz": {
+    "github.com/user/project/package": {
       "Ambiguous": true,
-      "Repository": "github.com/foo/bar",
       "Revision": {
-        "Hash": "abcd",
+        "VCS": "git",
+        "Repository": "github.com/user/project",
+        "Hash": "notarealhash",
+        "Message": "this is the commit message",
         "Timestamp": "January 1st, 2018"
       },
-      "Candidates": [{
-        "Hash": "defg",
-        "Timestamp": "January 2nd, 2008",
-        "Matches": [
-          "github.com/foo/bar",
-          "github.com/foo/bar/baz"
-        ]
-      }]
+      "Candidates": [ /* Other Revisions */ ]
     }
   }
 }
 ```
 
-### Multi-hash lookup
+## Usage
 
-Multi-hash lookups attempt to resolve the revisions of packages at multiple Go
-import paths. When package hashes are ambiguous, a multi-hash lookup will
-attempt to disambiguate multiple candidate revisions from the same repository
-by preferring the revision which matches the most package hashes. See [package
-hash ambiguity]() for details.
+### Package lookup
+
+Package lookups attempt to resolve a package's revision given its import path.
 
 ```bash
-$ go-resolve github.com/project/foo github.com/baz/quux
-{"ok": false, ""}
+$ go-resolve ./vendor/github.com/project/foo/baz
+{
+  "Hashes": {
+    "notarealhash": "github.com/user/project/package"
+  },
+  "Packages": {
+    "github.com/user/project/package": {
+      "Ambiguous": true,
+      "Revision": {
+        "VCS": "git",
+        "Repository": "github.com/user/project",
+        "Hash": "notarealhash",
+        "Message": "this is the commit message",
+        "Timestamp": "January 1st, 2018"
+      },
+      "Candidates": [ /* Other Revisions */ ]
+    }
+  }
+}
 ```
 
-### Vendor folder lookup
+<!-- ### Multi-package lookup
 
-Vendor lookups attempt to resolve the revisions of all Go packages within a
-folder. This is equivalent to a multi-hash lookup of all Go packages within the
-folder.
+Multi-package lookups attempt to resolve the revisions of multiple packages at
+specified by Go import paths. When package hashes are ambiguous, a multi-hash
+lookup will attempt to disambiguate multiple candidate revisions from the same
+repository by preferring the revision which matches the most package hashes.
+See [package hash ambiguity]() below for details.
 
 ```bash
-$ go-resolve -vendor ./vendor
-{"ok": false, ""}
-```
+$ go-resolve github.com/user/project/package ./vendor/foo/bar ./baz/quux/...
+``` -->
 
-### Integrity lookup
+<!-- ### Integrity lookup
 
 Integrity lookups check whether a package's actual, on-disk hash matches its
 expected hash given an expected revision.
@@ -89,9 +84,36 @@ $ go-resolve -revision expected-revision-commit-hash github.com/project/foo
 
 $ go-resolve -version expected-version-tag github.com/project/foo 
 {"ok": true, ""}
-```
+``` -->
 
-## Details
+## Running your own resolver
+
+This project also provides a resolver API implementation:
+
+- `github.com/fossas/go-resolve/cmd/go-resolve-api` is an API server for
+  querying hashes.
+- `github.com/fossas/go-resolve/cmd/go-resolve-worker` is an asynchronous worker
+  that computes package hashes and indexes Go projects.
+
+Instructions for running your own resolver are still WIP. See the Dockerfile and
+Makefile to get started.
+
+## Design
+
+### Why `go-resolve`?
+
+Idiomatic Go projects use dependencies by vendoring them. This often occurs with
+build tool support, but sometimes there is not an easy way to look up a
+package's revision. This can have many causes:
+
+- No build tool was used.
+- The build tool does not reproducibly specify revisions for some transitive
+  dependencies.
+- The build tool is not supported.
+- The dependency manifest is missing or corrupted.
+
+`go-resolve` was written to address these corner cases. Also, it's a fun project
+tackling a well-defined and well-scoped technical problem.
 
 ### Package hashing
 
@@ -114,15 +136,15 @@ Source files are the union of a package's:
 
 ### Package hash ambiguity
 
-Package hashes may be _ambiguous_. That is, a package hash may be present in
-multiple revisions, because repositories contain many packages and new revisions
-do not necessarily change all packages within the repository. For single hash
+Package hashes may be _ambiguous_. A package hash may be present in multiple
+revisions, because repositories contain many packages and new revisions
+do not necessarily change all packages within the repository. For single-package
 lookups, this means that a package hash lookup may return multiple possible
 revisions.
 
 For multi-hash lookups, `go-resolve` attempts to disambiguate package hashes by
-preferring revisions which match all package hashes of packages within the same
-repository.
+choosing revisions which match more package hashes of packages within the same
+revision.
 
 ### Revision selection
 

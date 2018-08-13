@@ -5,7 +5,7 @@ STRINGER=$(GOBIN)/stringer
 
 MIGRATIONS_FOLDER=db/migrations
 MIGRATIONS=$(wildcard $(MIGRATIONS_FOLDER)/*.sql)
-DATABASE_URL=postgresql://local:hunter2@0.0.0.0:5432/goresolve?sslmode=disable
+DATABASE_URL?=postgresql://local:hunter2@0.0.0.0:5432/goresolve?sslmode=disable
 GO_FILES=$(shell find . -name "*.go")
 
 all: $(GO_FILES) $(STRINGER)
