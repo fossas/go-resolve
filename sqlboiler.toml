@@ -1,5 +1,7 @@
-output="generated/models"
+output="generated/dbmodels"
+pkgname="dbmodels"
 no-tests=true
+
 [postgres]
   dbname="goresolve"
   host="localhost"

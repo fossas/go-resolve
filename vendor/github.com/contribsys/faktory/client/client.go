@@ -64,13 +64,62 @@ type ClientData struct {
 }
 
 type Server struct {
-	Network string
-	Address string
-	Timeout time.Duration
+	Network  string
+	Address  string
+	Password string
+	Timeout  time.Duration
+	TLS      *tls.Config
+}
+
+func (s *Server) Open() (*Client, error) {
+	return Dial(s, s.Password)
+}
+
+func (s *Server) ReadFromEnv() error {
+	val, ok := os.LookupEnv("FAKTORY_PROVIDER")
+	if ok {
+		if strings.Contains(val, ":") {
+			return fmt.Errorf(`Error: FAKTORY_PROVIDER is not a URL. It is the name of the ENV var that contains the URL:
+
+FAKTORY_PROVIDER=FOO_URL
+FOO_URL=tcp://:mypassword@faktory.example.com:7419`)
+		}
+
+		uval, ok := os.LookupEnv(val)
+		if ok {
+			uri, err := url.Parse(uval)
+			if err != nil {
+				return err
+			}
+			s.Network = uri.Scheme
+			s.Address = fmt.Sprintf("%s:%s", uri.Hostname(), uri.Port())
+			if uri.User != nil {
+				s.Password, _ = uri.User.Password()
+			}
+			return nil
+		}
+		return fmt.Errorf("FAKTORY_PROVIDER set to invalid value: %s", val)
+	}
+
+	uval, ok := os.LookupEnv("FAKTORY_URL")
+	if ok {
+		uri, err := url.Parse(uval)
+		if err != nil {
+			return err
+		}
+		s.Network = uri.Scheme
+		s.Address = fmt.Sprintf("%s:%s", uri.Hostname(), uri.Port())
+		if uri.User != nil {
+			s.Password, _ = uri.User.Password()
+		}
+		return nil
+	}
+
+	return nil
 }
 
 func DefaultServer() *Server {
-	return &Server{"tcp", "localhost:7419", 1 * time.Second}
+	return &Server{"tcp", "localhost:7419", "", 1 * time.Second, &tls.Config{}}
 }
 
 // Open connects to a Faktory server based on
@@ -87,50 +136,12 @@ func DefaultServer() *Server {
 // which is appropriate for local development.
 func Open() (*Client, error) {
 	srv := DefaultServer()
-
-	val, ok := os.LookupEnv("FAKTORY_PROVIDER")
-	if ok {
-		if strings.Contains(val, ":") {
-			return nil, fmt.Errorf(`Error: FAKTORY_PROVIDER is not a URL. It is the name of the ENV var that contains the URL:
-
-FAKTORY_PROVIDER=FOO_URL
-FOO_URL=tcp://:mypassword@faktory.example.com:7419`)
-		}
-
-		uval, ok := os.LookupEnv(val)
-		if ok {
-			uri, err := url.Parse(uval)
-			if err != nil {
-				return nil, err
-			}
-			srv.Network = uri.Scheme
-			srv.Address = fmt.Sprintf("%s:%s", uri.Hostname(), uri.Port())
-			pwd := ""
-			if uri.User != nil {
-				pwd, _ = uri.User.Password()
-			}
-			return Dial(srv, pwd)
-		}
-		return nil, fmt.Errorf("FAKTORY_PROVIDER set to invalid value: %s", val)
+	err := srv.ReadFromEnv()
+	if err != nil {
+		return nil, err
 	}
-
-	uval, ok := os.LookupEnv("FAKTORY_URL")
-	if ok {
-		uri, err := url.Parse(uval)
-		if err != nil {
-			return nil, err
-		}
-		srv.Network = uri.Scheme
-		srv.Address = fmt.Sprintf("%s:%s", uri.Hostname(), uri.Port())
-		pwd := ""
-		if uri.User != nil {
-			pwd, _ = uri.User.Password()
-		}
-		return Dial(srv, pwd)
-	}
-
 	// Connect to default localhost
-	return Dial(srv, "")
+	return srv.Open()
 }
 
 // Dial connects to the remote faktory server.
@@ -143,18 +154,18 @@ func Dial(srv *Server, password string) (*Client, error) {
 	var err error
 	var conn net.Conn
 	dial := &net.Dialer{Timeout: srv.Timeout}
-	if srv.Network == "tcp" {
+	if srv.Network == "tcp+tls" {
+		conn, err = tls.DialWithDialer(dial, "tcp", srv.Address, srv.TLS)
+		if err != nil {
+			return nil, err
+		}
+	} else {
 		conn, err = dial.Dial(srv.Network, srv.Address)
 		if err != nil {
 			return nil, err
 		}
 		if x, ok := conn.(*net.TCPConn); ok {
 			x.SetKeepAlive(true)
-		}
-	} else {
-		conn, err = tls.DialWithDialer(dial, srv.Network, srv.Address, &tls.Config{})
-		if err != nil {
-			return nil, err
 		}
 	}
 
@@ -243,6 +254,10 @@ func (c *Client) Push(job *Job) error {
 }
 
 func (c *Client) Fetch(q ...string) (*Job, error) {
+	if len(q) == 0 {
+		return nil, fmt.Errorf("Fetch must be called with one or more queue names")
+	}
+
 	err := writeLine(c.wtr, "FETCH", []byte(strings.Join(q, " ")))
 	if err != nil {
 		return nil, err

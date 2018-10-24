@@ -3,9 +3,10 @@ package api
 import (
 	"net/http"
 
+	"github.com/apex/log"
 	faktory "github.com/contribsys/faktory/client"
-	"github.com/ilikebits/go-core/api"
-	"github.com/ilikebits/go-core/log"
+
+	"github.com/fossas/go-resolve/api/internal/serve"
 )
 
 // IndexRequest contains the arguments for an indexing request.

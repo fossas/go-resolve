@@ -14,25 +14,15 @@ import (
 
 // Prints the usage string.
 func usage() {
-	fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s: %s [flags] <package>\n", os.Args[0], os.Args[0])
+	fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s: %s [flags] <import path>\n", os.Args[0], os.Args[0])
 	flag.PrintDefaults()
 }
 
 func main() {
 	flag.Usage = usage
-	vendorMode := flag.Bool("vendor", false, "Perform lookup in vendor mode")
-	hashFlag := flag.String("hash", "", "The package hash to look up")
-	expectedRevision := flag.String("revision", "", "The expected package revision")
-	expectedVersion := flag.String("version", "", "The expected package version")
-	apiURL := flag.String("api", "", "The API URL")
-	verbose := flag.Bool("verbose", false, "Use verbose logging")
+	apiURL := flag.String("api", "http://localhost:8080", "The API URL")
+	verbose := flag.Bool("v", false, "Use verbose logging")
 	flag.Parse()
-
-	// TODO: implement these flags.
-	_ = vendorMode
-	_ = hashFlag
-	_ = expectedRevision
-	_ = expectedVersion
 
 	if flag.NArg() != 1 {
 		usage()

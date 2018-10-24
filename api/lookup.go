@@ -4,12 +4,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi"
-
-	"github.com/ilikebits/go-core/api"
-	"github.com/ilikebits/go-core/log"
+	"github.com/apex/log"
 	"github.com/jmoiron/sqlx"
 
+	"github.com/fossas/go-resolve/api/internal/serve"
 	"github.com/fossas/go-resolve/models"
 )
 
@@ -23,17 +21,17 @@ type LookupResponse struct {
 }
 
 type Package struct {
-	Found      bool
 	Ambiguous  bool
-	Repository string
 	Revision   Revision
 	Candidates []Revision
 }
 
 type Revision struct {
-	Hash      string
-	Timestamp time.Time
-	Matches   []string
+	VCS        string
+	Repository string
+	Hash       string
+	Message    string
+	Timestamp  time.Time
 }
 
 // Lookup does multi-hash lookups.
@@ -42,8 +40,15 @@ type Revision struct {
 // to do this in SQL (e.g. by selecting revisions by hash, grouping by
 // repository, and then intersecting).
 func Lookup(db *sqlx.DB) http.HandlerFunc {
+	// TODO: maybe this should return (api.Renderable, error) and have a special
+	// case where the error also implements Renderable?
 	return api.Handle(func(r *api.Request) api.Renderable {
-		hash := chi.URLParam(r.Raw, "hash")
+		var req LookupRequest
+		e := r.JSON(&req)
+		if e != nil {
+			return e
+		}
+		hash := req.Hashes
 
 		logger := log.From(r.Context())
 		logger.Debug().Str("hash", hash).Msg("Lookup")

@@ -10,7 +10,7 @@ import (
 
 	"gopkg.in/src-d/go-git.v4/plumbing"
 
-	"github.com/ilikebits/go-core/log"
+	"github.com/apex/log"
 	"github.com/pkg/errors"
 	git "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"

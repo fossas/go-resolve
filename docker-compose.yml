@@ -31,7 +31,7 @@ services:
       - db
       - faktory
     ports:
-      - 80
+      - 8080:80
   go-resolve-worker:
     build: .
     restart: unless-stopped

@@ -6,8 +6,8 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/apex/log"
 	worker "github.com/contribsys/faktory_worker_go"
-	"github.com/ilikebits/go-core/log"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 

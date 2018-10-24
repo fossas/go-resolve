@@ -9,8 +9,8 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/apex/log"
 	faktory "github.com/contribsys/faktory/client"
-	"github.com/ilikebits/go-core/log"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 
